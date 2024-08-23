@@ -1,5 +1,9 @@
 # updated for newer albert > v0.17
 todo add more info
+
+
+Based on https://github.com/Sharsie/albertlauncher-vscode-projects
+
 # Albert launcher plugin for Visual Studio Code
 
 Based on https://github.com/mqus/jetbrains-albert-plugin

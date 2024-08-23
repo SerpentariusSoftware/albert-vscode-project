@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2024 Szilard Herczeg
 
-"""List and open VSCode projects based on recently opened paths."""
+"""This plugin allows you to quickly list and open VSCode projects based on recently opened paths."""
 
 import os
 # import json
@@ -13,24 +14,21 @@ from shutil import which
 from typing import List, Literal, Optional, Tuple
 from albert import *
 
-# __title__ = "VS Code Projects"
-# __version__ = "0.4.0"
-# __triggers__ = "vc "
-# __author__ = "Sharsie"
-md_name = "VS Code Projects"
+# Original author = "Sharsie"
 md_iid = "2.1"
+md_version = "0.5"
+md_name = "VS Code Projects"
 md_description = "Open & search Visual Studio Code Project files."
 md_id = "vc"
+md_license = "MIT"
 md_trigger = "vc "
-md_version = "0.5"
-md_maintainers = ["@silureth"]
-md_url = "https://github.com/"
+md_authors = ["@silureth"]
+md_url = "https://github.com/SerpentariusSoftware/albert-vscode-project"
 
 
 class Plugin(PluginInstance, GlobalQueryHandler):
 
-    default_icon = os.path.dirname(__file__) + "/vscode.svg"
-    ICON = [f"file:{Path(__file__).parent}/icon.png"]
+    ICON = [f"file:{Path(__file__).parent}/vscode.svg"]
     EXECUTABLE = which("code")
     HOME_DIR = os.environ["HOME"]
 
@@ -237,23 +235,6 @@ class Plugin(PluginInstance, GlobalQueryHandler):
             item[1]['index'], item[1]['index_secondary'], item[1]['name']), reverse=False)
 
         for element in sorted_project_items:
-            # project = element[1]
-            # name = project['name']
-            # path = project['path']
-            # item_id= "%s_%s" % (path, name)
-            # output_entry = StandardItem(
-            #     id="%s_%s" % (path, name),
-            #     text=name,
-            #     subtext=path,
-            #     inputActionText= md_trigger+ name,
-            #     iconUrls=self.ICON,
-            #     # actions=[
-            #     #     ProcAction(text="Open in VSCode",
-            #     #             commandline=["code", path],
-            #     #             cwd=path)
-            #     # ]
-            #     actions = [Action(id=item_id, text="Open in Visual Studio Code", callable=lambda: runDetachedProcess(cmdln=[self.EXECUTABLE,path]))]
-            # )
             output_entry = self.make_found_items(element)
             item = query.add(output_entry)
             items.append(item)
