@@ -4,29 +4,28 @@
 """This plugin allows you to quickly list and open VSCode projects based on recently opened paths."""
 
 import os
-# import json
 import unicodedata
 
-# from albert import *
 import json
+#from json import load, loads, dumps
 from pathlib import Path
 from shutil import which
-from typing import List, Literal, Optional, Tuple
+from typing import List, Optional
+
 from albert import *
 
 # Original author = "Sharsie"
-md_iid = "2.1"
-md_version = "0.5"
+md_iid = "3.0"
+md_version = "1.1"
 md_name = "VS Code Projects"
 md_description = "Open & search Visual Studio Code Project files."
-md_id = "vc"
 md_license = "MIT"
-md_trigger = "vc "
-md_authors = ["@silureth"]
 md_url = "https://github.com/SerpentariusSoftware/albert-vscode-project"
+md_authors = ["@silureth"]
+md_trigger = "vc "
 
 
-class Plugin(PluginInstance, GlobalQueryHandler):
+class Plugin(PluginInstance, TriggerQueryHandler):
 
     ICON = [f"file:{Path(__file__).parent}/vscode.svg"]
     EXECUTABLE = which("code")
@@ -59,11 +58,16 @@ class Plugin(PluginInstance, GlobalQueryHandler):
     ORDER_RECENT = 200
 
     def __init__(self):
-        GlobalQueryHandler.__init__(self, id=md_id, name=md_name, description=md_description, defaultTrigger=md_trigger)
-        PluginInstance.__init__(self, extensions=[self])
+        TriggerQueryHandler.__init__(self)#, id=md_id, name=md_name, description=md_description, defaultTrigger=md_trigger,synopsis='<vc | name>')
+        PluginInstance.__init__(self) #, extensions=[self])
 
     # Normalizes search string (accents and whatnot)
 
+    def synopsis(self, query):
+        return "<project name>"
+
+    def defaultTrigger(self):
+        return "vc "
 
     def normalizeString(self,input):
         return ''.join(c for c in unicodedata.normalize('NFD', input)
@@ -81,8 +85,8 @@ class Plugin(PluginInstance, GlobalQueryHandler):
             'index_secondary': '{0:04d}'.format(secondary_index),
         }
     # Return a item.
-    def make_item(self, text: str, subtext: str = "", actions: List[Action] = []) -> Item:
-        return StandardItem(id=md_id, iconUrls=self.ICON, text=text, subtext=subtext, actions=actions)
+    def make_item(self, text: str, subtext: str = "", actions: List[Action] = []) -> Item:        
+        return StandardItem(id='vc', iconUrls=self.ICON, text=text, subtext=subtext, actions=actions)
 
     def make_found_items(self, el) -> Item:
         project = el[1]
