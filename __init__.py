@@ -106,7 +106,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             return query.add(self.make_item("Visual Studio Code not installed"))
         #print("query.string")
         query_text = query.string
-        debug("query: '{}'".format(query_text))
+        #debug("query: '{}'".format(query_text))
         #if query.isTriggered:
             # Create projects dictionary to store projects by paths
         projects = {}
