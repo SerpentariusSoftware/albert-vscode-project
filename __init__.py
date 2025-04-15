@@ -86,7 +86,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         }
     # Return a item.
     def make_item(self, text: str, subtext: str = "", actions: List[Action] = []) -> Item:        
-        return StandardItem(id='vc', iconUrls=self.ICON, text=text, subtext=subtext, actions=actions)
+        return StandardItem(id=text, iconUrls=self.ICON, text=text, subtext=subtext, actions=actions)#id='vc'
 
     def make_found_items(self, el) -> Item:
         project = el[1]
@@ -97,11 +97,11 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         return self.make_item(
             name, 
             path,
-            [Action(id=path, text="Open in Visual Studio Code", callable=lambda: runDetachedProcess(cmdln=[self.EXECUTABLE, path]))]
+            [Action(path, "Open in Visual Studio Code",lambda p=path: openUrl("file://%s" % p))] #callable=lambda: runDetachedProcess(cmdln=[self.EXECUTABLE, path]))]
         )
 
     # The entry point for the plugin, will be called by albert.   
-    def handleTriggerQuery(self, query) -> Optional[List[Item]]:
+    def handleTriggerQuery(self, query):# -> Optional[List[Item]]:
         if not self.EXECUTABLE:
             return query.add(self.make_item("Visual Studio Code not installed"))
         #print("query.string")
