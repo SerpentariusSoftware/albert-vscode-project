@@ -5,7 +5,6 @@
 
 import os
 import unicodedata
-
 import json
 #from json import load, loads, dumps
 from pathlib import Path
@@ -22,12 +21,13 @@ md_description = "Open & search Visual Studio Code Project files."
 md_license = "MIT"
 md_url = "https://github.com/SerpentariusSoftware/albert-vscode-project"
 md_authors = ["@silureth"]
+md_bin_dependencies = "code"
 md_trigger = "vc "
 
 
 class Plugin(PluginInstance, TriggerQueryHandler):
 
-    ICON = [f"file:{Path(__file__).parent}/vscode.svg"]
+    #ICON = [f"file:{Path(__file__).parent}/vscode.svg"]
     EXECUTABLE = which("code")
     HOME_DIR = os.environ["HOME"]
 
@@ -60,6 +60,14 @@ class Plugin(PluginInstance, TriggerQueryHandler):
     def __init__(self):
         TriggerQueryHandler.__init__(self)#, id=md_id, name=md_name, description=md_description, defaultTrigger=md_trigger,synopsis='<vc | name>')
         PluginInstance.__init__(self) #, extensions=[self])
+            
+        self.iconUrls = [
+            f"file:{Path(__file__).parent}/vscode.svg"
+            # "xdg:preferences-system-search",
+            # "xdg:system-search",
+            # "xdg:search",
+            # "xdg:text-x-generic",
+        ]
 
     # Normalizes search string (accents and whatnot)
 
@@ -85,8 +93,8 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             'index_secondary': '{0:04d}'.format(secondary_index),
         }
     # Return a item.
-    def make_item(self, text: str, subtext: str = "", actions: List[Action] = []) -> Item:        
-        return StandardItem(id=text, iconUrls=self.ICON, text=text, subtext=subtext, actions=actions)#id='vc'
+    def make_item(self,id: str, text: str, subtext: str = "", actions: List[Action] = []) -> Item:        
+        return StandardItem(id=id, iconUrls=self.iconUrls, text=text, subtext=subtext, actions=actions)#id='vc'
 
     def make_found_items(self, el) -> Item:
         project = el[1]
@@ -95,152 +103,156 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         item_id= "%s_%s" % (path, name)
 
         return self.make_item(
+            item_id,
             name, 
             path,
-            [Action(path, "Open in Visual Studio Code",lambda p=path: openUrl("file://%s" % p))] #callable=lambda: runDetachedProcess(cmdln=[self.EXECUTABLE, path]))]
+            #[Action(path, "Open in Visual Studio Code",lambda p=path: openUrl("file://%s" % p))] #works
+            [
+                Action("open", f"Open {path} in Visual Studio Code", lambda p=path: openUrl("file://%s" % p))
+             ]#lambda: runDetachedProcess([self.EXECUTABLE, path]))]
         )
 
     # The entry point for the plugin, will be called by albert.   
     def handleTriggerQuery(self, query):# -> Optional[List[Item]]:
         if not self.EXECUTABLE:
             return query.add(self.make_item("Visual Studio Code not installed"))
-        #print("query.string")
-        query_text = query.string
-        #debug("query: '{}'".format(query_text))
-        #if query.isTriggered:
-            # Create projects dictionary to store projects by paths
-        projects = {}
+        if len(query.string) > 2:
+            query_text = query.string
+            
+            #debug("query: '{}'".format(query_text))
+            #if query.isTriggered:
+                # Create projects dictionary to store projects by paths
+            projects = {}
 
-        # Normalize user query
-        normalizedQueryString = self.normalizeString(query_text)
+            # Normalize user query
+            normalizedQueryString = self.normalizeString(query_text)
 
-        for storageFile in self.STORAGE_DIR_XDG_CONFIG_DIRS:
-            # No vscode storage file
-            if os.path.exists(storageFile):
-                with open(storageFile) as configFile:
-                    # Load the storage json
-                    storageConfig = json.loads(configFile.read())
+            for storageFile in self.STORAGE_DIR_XDG_CONFIG_DIRS:
+                # No vscode storage file
+                if os.path.exists(storageFile):
+                    with open(storageFile) as configFile:
+                        # Load the storage json
+                        storageConfig = json.loads(configFile.read())
 
-                    if (
-                        self.INCLUDE_RECENT == True
-                        and "lastKnownMenubarData" in storageConfig
-                        and "menus" in storageConfig['lastKnownMenubarData']
-                        and "File" in storageConfig['lastKnownMenubarData']['menus']
-                        and "items" in storageConfig['lastKnownMenubarData']['menus']['File']
-                    ):
-                        # Use incremental index for sorting which will keep the projects
-                        # sorted from least recent to oldest one
-                        sortIndex = self.ORDER_RECENT + 1
+                        if (
+                            self.INCLUDE_RECENT == True
+                            and "lastKnownMenubarData" in storageConfig
+                            and "menus" in storageConfig['lastKnownMenubarData']
+                            and "File" in storageConfig['lastKnownMenubarData']['menus']
+                            and "items" in storageConfig['lastKnownMenubarData']['menus']['File']
+                        ):
+                            # Use incremental index for sorting which will keep the projects
+                            # sorted from least recent to oldest one
+                            sortIndex = self.ORDER_RECENT + 1
 
-                        # These are all the menu items in File dropdown
-                        for menuItem in storageConfig['lastKnownMenubarData']['menus']['File']['items']:
-                            # Cannot safely detect proper menu item, as menu item IDs change over time
-                            # Instead we will search all submenus and check for IDs inside the submenu items
-                            if (
-                                not "id" in menuItem
-                                or not "submenu" in menuItem
-                                or not "items" in menuItem['submenu']
-                            ):
-                                continue
-
-                            for submenuItem in menuItem['submenu']['items']:
-                                # Check of submenu item with id "openRecentFolder" and make sure it contains necessarry keys
+                            # These are all the menu items in File dropdown
+                            for menuItem in storageConfig['lastKnownMenubarData']['menus']['File']['items']:
+                                # Cannot safely detect proper menu item, as menu item IDs change over time
+                                # Instead we will search all submenus and check for IDs inside the submenu items
                                 if (
-                                    not "id" in submenuItem
-                                    or submenuItem['id'] != "openRecentFolder"
-                                    or not "enabled" in submenuItem
-                                    or submenuItem['enabled'] != True
-                                    or not "label" in submenuItem
-                                    or not "uri" in submenuItem
-                                    or not "path" in submenuItem['uri']
+                                    not "id" in menuItem
+                                    or not "submenu" in menuItem
+                                    or not "items" in menuItem['submenu']
                                 ):
                                     continue
 
-                                # Get the full path to the project
-                                recentPath = submenuItem['uri']['path']
-                                if not os.path.exists(recentPath):
-                                    continue
+                                for submenuItem in menuItem['submenu']['items']:
+                                    # Check of submenu item with id "openRecentFolder" and make sure it contains necessarry keys
+                                    if (
+                                        not "id" in submenuItem
+                                        or submenuItem['id'] != "openRecentFolder"
+                                        or not "enabled" in submenuItem
+                                        or submenuItem['enabled'] != True
+                                        or not "label" in submenuItem
+                                        or not "uri" in submenuItem
+                                        or not "path" in submenuItem['uri']
+                                    ):
+                                        continue
 
-                                # Normalize the directory in which the project resides
-                                normalizedDir = self.normalizeString(recentPath.split("/")[-1])
-                                normalizedLabel = self.normalizeString(submenuItem['label'])
+                                    # Get the full path to the project
+                                    recentPath = submenuItem['uri']['path']
+                                    if not os.path.exists(recentPath):
+                                        continue
 
-                                # Compare the normalized dir with user query
-                                if (
-                                    normalizedDir.find(normalizedQueryString) != -1
-                                    or normalizedLabel.find(normalizedQueryString) != -1
-                                ):
-                                    # Inject the project
-                                    projects[recentPath] = self.createProjectEntry(
-                                        normalizedDir, recentPath, self.ORDER_RECENT, sortIndex)
-                                    # Increment the sort index
-                                    sortIndex += 1
+                                    # Normalize the directory in which the project resides
+                                    normalizedDir = self.normalizeString(recentPath.split("/")[-1])
+                                    normalizedLabel = self.normalizeString(submenuItem['label'])
+
+                                    # Compare the normalized dir with user query
+                                    if (
+                                        normalizedDir.find(normalizedQueryString) != -1
+                                        or normalizedLabel.find(normalizedQueryString) != -1
+                                    ):
+                                        # Inject the project
+                                        projects[recentPath] = self.createProjectEntry(
+                                            normalizedDir, recentPath, self.ORDER_RECENT, sortIndex)
+                                        # Increment the sort index
+                                        sortIndex += 1
 
 
-        # Check whether the Project Manager config file exists
-        if os.path.exists(self.PROJECT_MANAGER_XDG_CONFIG_DIR):
-            with open(self.PROJECT_MANAGER_XDG_CONFIG_DIR) as configFile:
-                configuredProjects = json.loads(configFile.read())
+            # Check whether the Project Manager config file exists
+            if os.path.exists(self.PROJECT_MANAGER_XDG_CONFIG_DIR):
+                with open(self.PROJECT_MANAGER_XDG_CONFIG_DIR) as configFile:
+                    configuredProjects = json.loads(configFile.read())
 
-                for project in configuredProjects:
-                    # Make sure we have necessarry keys
-                    if (
-                        not "rootPath" in project
-                        or not "name" in project
-                        or not "enabled" in project
-                        or project['enabled'] != True
-                    ):
-                        continue
+                    for project in configuredProjects:
+                        # Make sure we have necessarry keys
+                        if (
+                            not "rootPath" in project
+                            or not "name" in project
+                            or not "enabled" in project
+                            or project['enabled'] != True
+                        ):
+                            continue
 
-                    # Grab the path to the project
-                    rootPath = project['rootPath']
-                    if not os.path.exists(rootPath):
-                        continue
+                        # Grab the path to the project
+                        rootPath = project['rootPath']
+                        if not os.path.exists(rootPath):
+                            continue
 
-                    # Normalize name and dir of the project
-                    normalizedName = self.normalizeString(project['name'])
-                    normalizedDir = self.normalizeString(
-                        rootPath.split("/")[-1])
+                        # Normalize name and dir of the project
+                        normalizedName = self.normalizeString(project['name'])
+                        normalizedDir = self.normalizeString(
+                            rootPath.split("/")[-1])
 
-                    found = False
-                    orderIndex = 0
+                        found = False
+                        orderIndex = 0
 
-                    # Search against the query string
-                    if normalizedName.find(normalizedQueryString) != -1:
-                        orderIndex = self.ORDER_PM_NAME
-                        found = True
-                    elif normalizedDir.find(normalizedQueryString) != -1:
-                        orderIndex = self.ORDER_PM_PATH
-                        found = True
-                    elif "tags" in project:
-                        for tag in project['tags']:
-                            if self.normalizeString(tag).find(normalizedQueryString) != -1:
-                                orderIndex = self.ORDER_PM_TAG
-                                found = True
-                                break
+                        # Search against the query string
+                        if normalizedName.find(normalizedQueryString) != -1:
+                            orderIndex = self.ORDER_PM_NAME
+                            found = True
+                        elif normalizedDir.find(normalizedQueryString) != -1:
+                            orderIndex = self.ORDER_PM_PATH
+                            found = True
+                        elif "tags" in project:
+                            for tag in project['tags']:
+                                if self.normalizeString(tag).find(normalizedQueryString) != -1:
+                                    orderIndex = self.ORDER_PM_TAG
+                                    found = True
+                                    break
 
-                    if found:
-                        projects[rootPath] = self.createProjectEntry(
-                            project['name'],
-                            rootPath,
-                            orderIndex,
-                            # Secondary index is zero, because we will sort the rest by project name
-                            0
-                        )
+                        if found:
+                            projects[rootPath] = self.createProjectEntry(
+                                project['name'],
+                                rootPath,
+                                orderIndex,
+                                # Secondary index is zero, because we will sort the rest by project name
+                                0
+                            )
 
-        # Array of Items we will return to albert launcher
-        items = []
+            # Array of Items we will return to albert launcher
+            items = []
 
-        # disable automatic sorting
-        #query.disableSort()
+            # disable automatic sorting
+            #query.disableSort()
 
-        # Sort projects by indexes
-        sorted_project_items = sorted(projects.items(), key=lambda item: "%s_%s_%s" % (
-            item[1]['index'], item[1]['index_secondary'], item[1]['name']), reverse=False)
+            # Sort projects by indexes
+            sorted_project_items = sorted(projects.items(), key=lambda item: "%s_%s_%s" % (
+                item[1]['index'], item[1]['index_secondary'], item[1]['name']), reverse=False)
 
-        for element in sorted_project_items:
-            output_entry = self.make_found_items(element)
-            item = query.add(output_entry)
-            items.append(item)
-        
-        return items
+            for element in sorted_project_items:
+                output_entry = self.make_found_items(element)
+                item = query.add(output_entry)
+                #items.append(item)
+            #return items
