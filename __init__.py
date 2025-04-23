@@ -15,7 +15,7 @@ from albert import *
 
 # Original author = "Sharsie"
 md_iid = "3.0"
-md_version = "1.1"
+md_version = "1.2"
 md_name = "VS Code Projects"
 md_description = "Open & search Visual Studio Code Project files."
 md_license = "MIT"
@@ -116,78 +116,19 @@ class Plugin(PluginInstance, TriggerQueryHandler):
     def handleTriggerQuery(self, query):# -> Optional[List[Item]]:
         if not self.EXECUTABLE:
             return query.add(self.make_item("Visual Studio Code not installed"))
-        if len(query.string) > 2:
-            query_text = query.string
+                    # Array of Items we will return to albert launcher
+        items = []
+        projects = {}
+        if len(query.string) > 1:
+            #query_text = 
             
             #debug("query: '{}'".format(query_text))
             #if query.isTriggered:
                 # Create projects dictionary to store projects by paths
-            projects = {}
+        
 
             # Normalize user query
-            normalizedQueryString = self.normalizeString(query_text)
-
-            for storageFile in self.STORAGE_DIR_XDG_CONFIG_DIRS:
-                # No vscode storage file
-                if os.path.exists(storageFile):
-                    with open(storageFile) as configFile:
-                        # Load the storage json
-                        storageConfig = json.loads(configFile.read())
-
-                        if (
-                            self.INCLUDE_RECENT == True
-                            and "lastKnownMenubarData" in storageConfig
-                            and "menus" in storageConfig['lastKnownMenubarData']
-                            and "File" in storageConfig['lastKnownMenubarData']['menus']
-                            and "items" in storageConfig['lastKnownMenubarData']['menus']['File']
-                        ):
-                            # Use incremental index for sorting which will keep the projects
-                            # sorted from least recent to oldest one
-                            sortIndex = self.ORDER_RECENT + 1
-
-                            # These are all the menu items in File dropdown
-                            for menuItem in storageConfig['lastKnownMenubarData']['menus']['File']['items']:
-                                # Cannot safely detect proper menu item, as menu item IDs change over time
-                                # Instead we will search all submenus and check for IDs inside the submenu items
-                                if (
-                                    not "id" in menuItem
-                                    or not "submenu" in menuItem
-                                    or not "items" in menuItem['submenu']
-                                ):
-                                    continue
-
-                                for submenuItem in menuItem['submenu']['items']:
-                                    # Check of submenu item with id "openRecentFolder" and make sure it contains necessarry keys
-                                    if (
-                                        not "id" in submenuItem
-                                        or submenuItem['id'] != "openRecentFolder"
-                                        or not "enabled" in submenuItem
-                                        or submenuItem['enabled'] != True
-                                        or not "label" in submenuItem
-                                        or not "uri" in submenuItem
-                                        or not "path" in submenuItem['uri']
-                                    ):
-                                        continue
-
-                                    # Get the full path to the project
-                                    recentPath = submenuItem['uri']['path']
-                                    if not os.path.exists(recentPath):
-                                        continue
-
-                                    # Normalize the directory in which the project resides
-                                    normalizedDir = self.normalizeString(recentPath.split("/")[-1])
-                                    normalizedLabel = self.normalizeString(submenuItem['label'])
-
-                                    # Compare the normalized dir with user query
-                                    if (
-                                        normalizedDir.find(normalizedQueryString) != -1
-                                        or normalizedLabel.find(normalizedQueryString) != -1
-                                    ):
-                                        # Inject the project
-                                        projects[recentPath] = self.createProjectEntry(
-                                            normalizedDir, recentPath, self.ORDER_RECENT, sortIndex)
-                                        # Increment the sort index
-                                        sortIndex += 1
+            normalizedQueryString = self.normalizeString(query.string)
 
 
             # Check whether the Project Manager config file exists
@@ -241,9 +182,6 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                                 0
                             )
 
-            # Array of Items we will return to albert launcher
-            items = []
-
             # disable automatic sorting
             #query.disableSort()
 
@@ -256,3 +194,72 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                 item = query.add(output_entry)
                 #items.append(item)
             #return items
+        elif len(query.string) >= 1 and query.string == 'r': 
+            for storageFile in self.STORAGE_DIR_XDG_CONFIG_DIRS:
+                # No vscode storage file
+                if os.path.exists(storageFile):
+                    with open(storageFile) as configFile:
+                        # Load the storage json
+                        storageConfig = json.loads(configFile.read())
+
+                        if (
+                            self.INCLUDE_RECENT == True
+                            and "lastKnownMenubarData" in storageConfig
+                            and "menus" in storageConfig['lastKnownMenubarData']
+                            and "File" in storageConfig['lastKnownMenubarData']['menus']
+                            and "items" in storageConfig['lastKnownMenubarData']['menus']['File']
+                        ):
+                            # Use incremental index for sorting which will keep the projects
+                            # sorted from least recent to oldest one
+                            sortIndex = self.ORDER_RECENT + 1
+
+                            # These are all the menu items in File dropdown
+                            for menuItem in storageConfig['lastKnownMenubarData']['menus']['File']['items']:
+                                # Cannot safely detect proper menu item, as menu item IDs change over time
+                                # Instead we will search all submenus and check for IDs inside the submenu items
+                                if (
+                                    not "id" in menuItem
+                                    or not "submenu" in menuItem
+                                    or not "items" in menuItem['submenu']
+                                ):
+                                    continue
+
+                                for submenuItem in menuItem['submenu']['items']:
+                                    # Check of submenu item with id "openRecentFolder" and make sure it contains necessarry keys
+                                    if (
+                                        not "id" in submenuItem
+                                        or submenuItem['id'] != "openRecentFolder"
+                                        or not "enabled" in submenuItem
+                                        or submenuItem['enabled'] != True
+                                        or not "label" in submenuItem
+                                        or not "uri" in submenuItem
+                                        or not "path" in submenuItem['uri']
+                                    ):
+                                        continue
+
+                                    # Get the full path to the project
+                                    recentPath = submenuItem['uri']['path']
+                                    if not os.path.exists(recentPath):
+                                        continue
+
+                                    # Normalize the directory in which the project resides
+                                    normalizedDir = self.normalizeString(recentPath.split("/")[-1])
+                                    normalizedLabel = self.normalizeString(submenuItem['label'])
+
+                                    # Compare the normalized dir with user query
+                                    # if (
+                                    #     normalizedDir.find(normalizedQueryString) != -1
+                                    #     or normalizedLabel.find(normalizedQueryString) != -1
+                                    # ):
+                                    # Inject the project
+                                    projects[recentPath] = self.createProjectEntry(
+                                        normalizedDir, recentPath, self.ORDER_RECENT, sortIndex)
+                                    # Increment the sort index
+                                    sortIndex += 1
+            sorted_project_items = sorted(projects.items(), key=lambda item: "%s_%s_%s" % (
+            item[1]['index'], item[1]['index_secondary'], item[1]['name']), reverse=False)
+            print(sorted_project_items)
+            for element in sorted_project_items:
+                output_entry = self.make_found_items(element)
+                item = query.add(output_entry)
+            

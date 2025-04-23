@@ -1,4 +1,4 @@
-# updated for newer albert > v0.17
+# updated for newer albert, API version 3
 todo add more info
 
 
