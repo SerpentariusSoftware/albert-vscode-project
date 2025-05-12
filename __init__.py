@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2024 Szilard Herczeg
+# Copyright (c) 2025 Szilard Herczeg
 
 """This plugin allows you to quickly list and open VSCode projects based on recently opened paths."""
 
@@ -27,7 +27,6 @@ md_trigger = "vc "
 
 class Plugin(PluginInstance, TriggerQueryHandler):
 
-    #ICON = [f"file:{Path(__file__).parent}/vscode.svg"]
     EXECUTABLE = which("code")
     HOME_DIR = os.environ["HOME"]
 
@@ -58,8 +57,8 @@ class Plugin(PluginInstance, TriggerQueryHandler):
     ORDER_RECENT = 200
 
     def __init__(self):
-        TriggerQueryHandler.__init__(self)#, id=md_id, name=md_name, description=md_description, defaultTrigger=md_trigger,synopsis='<vc | name>')
-        PluginInstance.__init__(self) #, extensions=[self])
+        TriggerQueryHandler.__init__(self)
+        PluginInstance.__init__(self)
             
         self.iconUrls = [
             f"file:{Path(__file__).parent}/vscode.svg"
@@ -106,10 +105,9 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             item_id,
             name, 
             path,
-            #[Action(path, "Open in Visual Studio Code",lambda p=path: openUrl("file://%s" % p))] #works
             [
                 Action("open", f"Open {path} in Visual Studio Code", lambda p=path: openUrl("file://%s" % p))
-             ]#lambda: runDetachedProcess([self.EXECUTABLE, path]))]
+             ]
         )
 
     # The entry point for the plugin, will be called by albert.   
@@ -120,12 +118,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         items = []
         projects = {}
         if len(query.string) > 1:
-            #query_text = 
-            
-            #debug("query: '{}'".format(query_text))
-            #if query.isTriggered:
-                # Create projects dictionary to store projects by paths
-        
+       
 
             # Normalize user query
             normalizedQueryString = self.normalizeString(query.string)
@@ -182,9 +175,6 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                                 0
                             )
 
-            # disable automatic sorting
-            #query.disableSort()
-
             # Sort projects by indexes
             sorted_project_items = sorted(projects.items(), key=lambda item: "%s_%s_%s" % (
                 item[1]['index'], item[1]['index_secondary'], item[1]['name']), reverse=False)
@@ -192,8 +182,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             for element in sorted_project_items:
                 output_entry = self.make_found_items(element)
                 item = query.add(output_entry)
-                #items.append(item)
-            #return items
+
         elif len(query.string) >= 1 and query.string == 'r': 
             for storageFile in self.STORAGE_DIR_XDG_CONFIG_DIRS:
                 # No vscode storage file
