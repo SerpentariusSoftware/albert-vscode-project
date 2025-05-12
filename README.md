@@ -12,7 +12,7 @@ Sorting is based on
 3) Last come recently opened paths in VS Code sorted in the same way as they are shown in VS Code File -> Open Recent
 
 ## How to install
-Copy contents of this directory to ${XDG_DATA_HOME:-$HOME/.local/share}/albert/org.albert.extension.python/modules/vscode-projects
+Copy contents of this directory to $HOME/.local/share/albert/python/plugins/albert-vscode-project
 
 ## How to use
 Start by typing `vc `. If you have any recently opened paths you should immediately see the latest ones at the top.
