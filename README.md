@@ -1,6 +1,3 @@
-# Updated for newer albert, API version 3
-Based on https://github.com/Sharsie/albertlauncher-vscode-projects
-
 # Albert launcher plugin for Visual Studio Code
 This is a plugin for the [albert launcher](https://albertlauncher.github.io/) which lists and lets you start projects of VS Code IDE
 
@@ -30,4 +27,6 @@ I am in no way affiliated with VS Code or Microsoft.
 VS Code logo used based on the [brand guidelines](https://code.visualstudio.com/brand).
 
 # Based on (updated)
+Based on https://github.com/Sharsie/albertlauncher-vscode-projects
+
 Based on https://github.com/mqus/jetbrains-albert-plugin
